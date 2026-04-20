@@ -1,0 +1,9 @@
+# ─── Private / Secret Files ───────────────────────
+config.js          # Firebase keys — NEVER commit this!
+js/config.js       # Firebase keys (in js/ folder) — NEVER commit this!
+
+# ─── OS / Editor junk ───────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+.vscode/

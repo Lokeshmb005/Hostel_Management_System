@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Portal — Hostel Management</title>
+  <meta name="description" content="Student dashboard for checking attendance, applying for gatepasses and tracking approval status.">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <style>
+    /* ── Edit Profile Modal ── */
+    .ep-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);z-index:900;align-items:center;justify-content:center}
+    .ep-overlay.open{display:flex}
+    .ep-modal{background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:460px;margin:1rem;box-shadow:0 24px 64px rgba(0,0,0,.5);animation:epSlide .25s ease}
+    @keyframes epSlide{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .ep-head{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 1.5rem;border-bottom:1px solid var(--border)}
+    .ep-head h3{margin:0;font-size:1.05rem;font-weight:700;color:var(--text)}
+    .ep-close{background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;line-height:1;padding:.2rem .4rem;border-radius:6px;transition:background .15s}
+    .ep-close:hover{background:rgba(255,255,255,.08);color:var(--text)}
+    .ep-body{padding:1.4rem 1.5rem;display:flex;flex-direction:column;gap:1rem;max-height:70vh;overflow-y:auto}
+    .ep-photo-row{display:flex;flex-direction:column;align-items:center;gap:.7rem;padding-bottom:.5rem}
+    .ep-avatar-preview{width:88px;height:88px;border-radius:18px;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:2.1rem;font-weight:800;color:#fff;overflow:hidden;box-shadow:0 6px 20px rgba(124,58,237,.35)}
+    .ep-avatar-preview img{width:100%;height:100%;object-fit:cover}
+    .ep-photo-btns{display:flex;gap:.6rem;align-items:center}
+    .ep-upload-btn{background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.35);color:var(--primary-light);border-radius:8px;padding:.42rem .9rem;font-size:.82rem;cursor:pointer;transition:background .2s}
+    .ep-upload-btn:hover{background:rgba(99,102,241,.28)}
+    .ep-remove-btn{background:none;border:none;color:#f87171;font-size:.78rem;cursor:pointer;text-decoration:underline}
+    .ep-foot{display:flex;gap:.75rem;padding:1.2rem 1.5rem;border-top:1px solid var(--border);justify-content:flex-end}
+    /* photo in profile avatar */
+    #profAvatar img,#userAvatar img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+  </style>
+</head>
+<body>
+
+<div class="loader-overlay" id="loader"><div class="spinner"></div></div>
+<div id="toast-container"></div>
+<div class="hamburger" id="hamburger" onclick="toggleSidebar()">☰</div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<div class="app-layout">
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon" style="background:transparent;box-shadow:none;padding:1px;"><img src="assets/images/sec_logo.png" alt="SEC" style="width:36px;height:36px;object-fit:contain;border-radius:6px;"></div>
+      <div class="logo-text">SEC Hostel<small>Student</small></div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <div class="user-name" id="userName">Loading...</div>
+      <div class="user-meta" id="userMeta">—</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Menu</div>
+      <a class="nav-item active" onclick="showTab('dashboard')" id="nav-dashboard">
+        <span class="nav-icon">🏠</span> Dashboard
+      </a>
+      <a class="nav-item" onclick="showTab('gatepass')" id="nav-gatepass">
+        <span class="nav-icon">🚪</span> Apply Gatepass
+      </a>
+      <a class="nav-item" onclick="showTab('mygatepass')" id="nav-mygatepass">
+        <span class="nav-icon">📋</span> My Gatepasses
+      </a>
+      <a class="nav-item" onclick="showTab('attendance')" id="nav-attendance">
+        <span class="nav-icon">📅</span> Attendance
+      </a>
+      <a class="nav-item" onclick="showTab('profile')" id="nav-profile">
+        <span class="nav-icon">👤</span> My Profile
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn btn-ghost btn-full" onclick="logout()">🚪 Logout</button>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN CONTENT ══ -->
+  <main class="main-content">
+
+    <!-- DASHBOARD TAB -->
+    <div id="tab-dashboard" class="tab-pane active">
+      <div class="page-header fade-in">
+        <h1 id="dashGreeting">Welcome! 👋</h1>
+        <p id="dashSubtitle">Loading your profile...</p>
+      </div>
+
+      <div class="stats-grid fade-in">
+        <div class="stat-card">
+          <div class="stat-icon green">✅</div>
+          <div class="stat-info">
+            <div class="stat-value" id="statPresent">—</div>
+            <div class="stat-label">Days Present</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon red">❌</div>
+          <div class="stat-info">
+            <div class="stat-value" id="statAbsent">—</div>
+            <div class="stat-label">Days Absent</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple">📊</div>
+          <div class="stat-info">
+            <div class="stat-value" id="statPercent">—</div>
+            <div class="stat-label">Attendance %</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon cyan">🚪</div>
+          <div class="stat-info">
+            <div class="stat-value" id="statGatepasses">—</div>
+            <div class="stat-label">My Gatepasses</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini Calendar -->
+      <div class="card fade-in">
+        <div class="card-header">
+          <div class="card-title">📅 This Month's Attendance</div>
+          <button class="btn btn-ghost btn-sm" onclick="showTab('attendance')">View Full →</button>
+        </div>
+        <div class="cal-header">
+          <div class="cal-month-label" id="dashCalLabel">—</div>
+        </div>
+        <div class="cal-day-labels">
+          <div class="cal-day-label">Sun</div><div class="cal-day-label">Mon</div>
+          <div class="cal-day-label">Tue</div><div class="cal-day-label">Wed</div>
+          <div class="cal-day-label">Thu</div><div class="cal-day-label">Fri</div>
+          <div class="cal-day-label">Sat</div>
+        </div>
+        <div class="cal-grid" id="dashCalGrid"></div>
+        <div class="att-stats" id="dashAttStats" style="margin-top:0.75rem;"></div>
+      </div>
+
+      <!-- Recent Gatepasses -->
+      <div class="card fade-in">
+        <div class="card-header">
+          <div class="card-title">🚀 Recent Gatepasses</div>
+          <button class="btn btn-ghost btn-sm" onclick="showTab('mygatepass')">View All →</button>
+        </div>
+        <div id="recentGatepasses">
+          <div class="empty-state"><div class="empty-icon">📋</div><p>No recent gatepasses</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GATEPASS APPLY TAB -->
+    <div id="tab-gatepass" class="tab-pane">
+      <div class="page-header">
+        <h1>🚪 Apply for Gatepass</h1>
+        <p>Submit a gatepass request for warden approval</p>
+      </div>
+      <div class="card" style="max-width:560px;">
+        <div class="card-header">
+          <div class="card-title">New Request</div>
+        </div>
+        <form id="gatepassForm">
+          <div class="form-group">
+            <label for="leaveType">Type of Leave</label>
+            <select id="leaveType" required>
+              <option value="">Select type...</option>
+              <option value="Home Visit">🏠 Home Visit</option>
+              <option value="Medical">🏥 Medical</option>
+              <option value="Family Function">🎉 Family Function</option>
+              <option value="Personal Work">💼 Personal Work</option>
+              <option value="Other">📌 Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="outDate">Departure Date &amp; Time</label>
+            <input type="datetime-local" id="outDate" required>
+          </div>
+          <div class="form-group">
+            <label for="inDate">Expected Return Date &amp; Time</label>
+            <input type="datetime-local" id="inDate" required>
+          </div>
+          <div class="form-group">
+            <label for="reason">Reason / Details</label>
+            <textarea id="reason" rows="4" placeholder="Briefly explain the reason for your leave..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label for="parentPhone">Parent / Guardian Contact</label>
+            <input type="tel" id="parentPhone" placeholder="+91 XXXXX XXXXX">
+          </div>
+          <button type="submit" class="btn btn-primary" id="submitGatepassBtn">
+            📤 Submit Request
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MY GATEPASSES TAB -->
+    <div id="tab-mygatepass" class="tab-pane">
+      <div class="page-header">
+        <h1>📋 My Gatepasses</h1>
+        <p>Track all your gatepass requests and their approval status</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">All Requests</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadMyGatepasses()">🔄 Refresh</button>
+        </div>
+        <div id="myGatepassList">
+          <div class="empty-state"><div class="empty-icon">🔄</div><p>Loading...</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE TAB -->
+    <div id="tab-attendance" class="tab-pane">
+      <div class="page-header">
+        <h1>📅 Attendance</h1>
+        <p>Your month-wise attendance record</p>
+      </div>
+
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
+        <div class="stat-card">
+          <div class="stat-icon green">✅</div>
+          <div class="stat-info">
+            <div class="stat-value" id="attPresent">—</div>
+            <div class="stat-label">Days Present</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon red">❌</div>
+          <div class="stat-info">
+            <div class="stat-value" id="attAbsent">—</div>
+            <div class="stat-label">Days Absent</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple">📊</div>
+          <div class="stat-info">
+            <div class="stat-value" id="attPct">—</div>
+            <div class="stat-label">Percentage</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cal-header">
+          <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+          <div class="cal-month-label" id="fullCalLabel">—</div>
+          <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+        </div>
+        <div class="cal-day-labels">
+          <div class="cal-day-label">Sun</div><div class="cal-day-label">Mon</div>
+          <div class="cal-day-label">Tue</div><div class="cal-day-label">Wed</div>
+          <div class="cal-day-label">Thu</div><div class="cal-day-label">Fri</div>
+          <div class="cal-day-label">Sat</div>
+        </div>
+        <div class="cal-grid" id="fullCalGrid"></div>
+        <div class="att-stats" style="margin-top:1rem;">
+          <div class="att-stat"><div class="att-dot present"></div>Present</div>
+          <div class="att-stat"><div class="att-dot absent"></div>Absent</div>
+          <div class="att-stat"><div class="att-dot no-data"></div>No Data</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE TAB -->
+    <div id="tab-profile" class="tab-pane">
+      <div class="page-header">
+        <h1>👤 My Profile</h1>
+        <p>Your hostel registration details</p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+
+        <!-- Identity Card -->
+        <div class="card" style="grid-column:1/-1;">
+          <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+            <div id="profAvatar" style="width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#06b6d4);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:#fff;flex-shrink:0;overflow:hidden;box-shadow:0 8px 24px rgba(124,58,237,0.35);">?</div>
+            <div style="flex:1;">
+              <div id="profName" style="font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:0.25rem;">Loading...</div>
+              <div id="profRole" style="display:inline-block;background:rgba(124,58,237,0.2);color:#a78bfa;border-radius:100px;padding:3px 12px;font-size:0.78rem;font-weight:700;letter-spacing:0.5px;">STUDENT</div>
+            </div>
+            <button class="btn btn-ghost" onclick="openEditModal()" style="flex-shrink:0;display:flex;align-items:center;gap:.4rem;">&#9998; Edit Profile</button>
+          </div>
+        </div>
+
+        <!-- Academic Info -->
+        <div class="card">
+          <div class="card-title" style="margin-bottom:1.25rem;">🎓 Academic Info</div>
+          <div style="display:flex;flex-direction:column;gap:1rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid var(--border);">
+              <span style="font-size:0.82rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Register Number</span>
+              <span id="profRegno" style="font-weight:700;color:var(--text);">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid var(--border);">
+              <span style="font-size:0.82rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Room Number</span>
+              <span id="profRoom" style="font-weight:700;color:var(--text);">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;">
+              <span style="font-size:0.82rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Floor</span>
+              <span id="profFloor" style="font-weight:700;color:var(--text);">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Details -->
+        <div class="card">
+          <div class="card-title" style="margin-bottom:1.25rem;">📞 Contact Details</div>
+          <div style="display:flex;flex-direction:column;gap:1rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid var(--border);">
+              <span style="font-size:0.82rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Email Address</span>
+              <span id="profEmail" style="font-weight:600;color:var(--primary-light);font-size:0.88rem;word-break:break-all;text-align:right;max-width:55%;">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid var(--border);">
+              <span style="font-size:0.82rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Mobile Number</span>
+              <span id="profMobile" style="font-weight:700;color:var(--text);">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid var(--border);">
+              <span style="font-size:0.82rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Parent / Guardian Mobile</span>
+              <span id="profParentMobile" style="font-weight:700;color:var(--text);">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;">
+              <span style="font-size:0.82rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Portal Role</span>
+              <span style="font-weight:700;color:var(--text);">Student 🎓</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ EDIT PROFILE MODAL ══ -->
+<div id="editModal" class="ep-overlay" onclick="closeEditModal(event)">
+  <div class="ep-modal">
+    <div class="ep-head">
+      <h3>✏️ Edit Profile</h3>
+      <button class="ep-close" onclick="closeEditModal()">&#10005;</button>
+    </div>
+    <div class="ep-body">
+      <!-- Photo upload -->
+      <div class="ep-photo-row">
+        <div id="epAvatar" class="ep-avatar-preview">?</div>
+        <div class="ep-photo-btns">
+          <label class="ep-upload-btn" for="epPhotoInput">📷 Change Photo</label>
+          <input type="file" id="epPhotoInput" accept="image/*" style="display:none" onchange="handlePhotoUpload(this)">
+          <button class="ep-remove-btn" id="epRemoveBtn" onclick="removePhoto()" style="display:none">Remove</button>
+        </div>
+      </div>
+      <!-- Editable fields -->
+      <div class="form-group">
+        <label for="epEmail">Email Address</label>
+        <input type="email" id="epEmail" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="epMobile">Mobile Number</label>
+        <input type="tel" id="epMobile" placeholder="+91 XXXXX XXXXX">
+      </div>
+      <div class="form-group">
+        <label for="epParentMobile">Parent / Guardian Mobile</label>
+        <input type="tel" id="epParentMobile" placeholder="+91 XXXXX XXXXX">
+      </div>
+    </div>
+    <div class="ep-foot">
+      <button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+      <button class="btn btn-primary" id="epSaveBtn" onclick="saveProfile()">&#128190; Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<!-- 🔑 Environment config (Firebase keys) -->
+<script src="js/config.js"></script>
+
+<!-- Student portal logic -->
+<script src="js/student.js"></script>
+
+</body>
+</html>
