@@ -245,6 +245,13 @@ function drawFullCal() {
 ═══════════════════════════════════════════ */
 document.getElementById('gatepassForm').addEventListener('submit', function(e) {
   e.preventDefault();
+
+  // Guard: profile must be loaded before submitting
+  if (!userProfile || !currentUser) {
+    toast('Please wait — your profile is still loading. Try again in a moment.', 'warning');
+    return;
+  }
+
   var btn    = document.getElementById('submitGatepassBtn');
   var out    = document.getElementById('outDate').value;
   var inX    = document.getElementById('inDate').value;
@@ -253,11 +260,11 @@ document.getElementById('gatepassForm').addEventListener('submit', function(e) {
   var phone  = document.getElementById('parentPhone').value.trim();
 
   if (!type)   { toast('Please select a leave type.', 'warning'); return; }
-  if (!out)    { toast('Please enter departure date.', 'warning'); return; }
-  if (!inX)    { toast('Please enter return date.', 'warning'); return; }
+  if (!out)    { toast('Please enter departure date & time.', 'warning'); return; }
+  if (!inX)    { toast('Please enter return date & time.', 'warning'); return; }
   if (!reason) { toast('Please enter a reason.', 'warning'); return; }
   if (new Date(inX) <= new Date(out)) {
-    toast('Return date must be after departure date.', 'warning'); return;
+    toast('Return date & time must be after departure.', 'warning'); return;
   }
 
   btn.classList.add('loading');
@@ -272,7 +279,7 @@ document.getElementById('gatepassForm').addEventListener('submit', function(e) {
     inDate:      inX,
     reason:      reason,
     leaveType:   type,
-    parentPhone: phone,
+    parentPhone: phone || userProfile.parentMobile || '—',
     status:      'pending',
     timestamp:   firebase.firestore.FieldValue.serverTimestamp(),
   }).then(function() {
@@ -396,8 +403,10 @@ function openEditModal() {
 }
 
 function closeEditModal(e) {
+  // Called from X button (no arg) OR overlay click (check target is overlay itself)
   if (e && e.target !== document.getElementById('editModal')) return;
   document.getElementById('editModal').classList.remove('open');
+  document.getElementById('epPhotoInput').value = '';
 }
 
 function handlePhotoUpload(input) {

@@ -497,8 +497,10 @@ function openEditModal() {
 }
 
 function closeEditModal(e) {
+  // Called from X button (no arg) OR overlay click (check target is overlay itself)
   if (e && e.target !== document.getElementById('editModal')) return;
   document.getElementById('editModal').classList.remove('open');
+  document.getElementById('epPhotoInput').value = '';
 }
 
 function handlePhotoUpload(input) {
