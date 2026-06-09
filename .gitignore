@@ -1,6 +1,6 @@
 # ─── Private / Secret Files ───────────────────────
-config.js          # Firebase keys — NEVER commit this!
-js/config.js       # Firebase keys (in js/ folder) — NEVER commit this!
+# config.js is now committed intentionally (Firebase keys are safe to expose)
+# The real security is enforced by Firestore Security Rules
 
 # ─── OS / Editor junk ───────────────────────────
 .DS_Store
