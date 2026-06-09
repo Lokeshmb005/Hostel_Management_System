@@ -1,8 +1,8 @@
 /**
  * ╔══════════════════════════════════════════════╗
  *  config.js — Firebase Environment Config
- *  ⚠️  DO NOT commit this file to Git!
- *     It is listed in .gitignore
+ *  ✅ This file is committed to Git intentionally.
+ *     Security is enforced by Firestore Rules.
  * ╚══════════════════════════════════════════════╝
  */
 const FIREBASE_CONFIG = {
@@ -10,6 +10,6 @@ const FIREBASE_CONFIG = {
   authDomain:        "sechostel-91511.firebaseapp.com",
   projectId:         "sechostel-91511",
   storageBucket:     "sechostel-91511.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId:             "YOUR_APP_ID",
+  messagingSenderId: "1001210999349",
+  appId:             "1:1001210999349:web:d5a1f66bfe6be25bfcf77c",
 };
